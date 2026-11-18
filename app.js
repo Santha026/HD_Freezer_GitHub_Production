@@ -61,7 +61,42 @@ async function draftEmail(id){try{const req=check(await db.from('requests').sele
 function dateExcel(value){if(typeof value==='number'){const d=new Date(Date.UTC(1899,11,30)+value*86400000);return d.toISOString().slice(0,10)}const s=String(value??'').trim();if(/^\d{4}-\d{2}-\d{2}$/.test(s))return s;const m=s.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);if(m)return `${m[3]}-${m[2].padStart(2,'0')}-${m[1].padStart(2,'0')}`;throw new Error('Invalid receipt date: '+s)}
 function toRows(kind,source){const keys=COLUMNS[kind];const numeric=new Set(['total_deposit','security_deposit','dd_value','asset_value']);return source.map((item,i)=>{const values=Object.entries(item).map(([k,v])=>[norm(k).replace(/[^A-Z0-9]/g,''),v]);const row={};for(const field of keys){const aliases=[field,...(ALIASES[field]||[])].map(k=>norm(k).replace(/[^A-Z0-9]/g,''));const match=values.find(([k])=>aliases.includes(k));let v=match?.[1]??'';if(field==='receipt_date'){if(!v)throw new Error('Missing Stock Receipt Date at row '+(i+2));v=dateExcel(v)}else if(numeric.has(field)){v=Number(String(v).replace(/[₹,\s]/g,''))||0;if(v<0)throw new Error('Negative value at row '+(i+2))}else v=String(v).trim();row[field]=v}
  if(!row.hd_code&&kind!=='stock')throw new Error('Missing HD Code at row '+(i+2));if(kind==='stock'&&!row.cfa_code)throw new Error('Missing CFA Code at row '+(i+2));if(kind==='stock'){row.stock_status=norm(row.stock_status||'AVAILABLE');row.allocation_status=norm(row.allocation_status||'UNALLOCATED');if(['IN STOCK','INHAND','READY','FREE'].includes(row.stock_status))row.stock_status='AVAILABLE';if(['AVAILABLE','NOT ALLOCATED','PENDING','FREE'].includes(row.allocation_status))row.allocation_status='UNALLOCATED'}if(['assets','stock'].includes(kind)&&(!row.asset_tag||!row.capacity))throw new Error('Missing asset tag or capacity at row '+(i+2));return row})}
-async function uploadMaster(file,kind){if(profile.role!=='admin')throw new Error('Admin only');if(!file) return;if(!confirm(`Replace entire ${kind} master using ${file.name}? This changes live production data.`))return;const bytes=await file.arrayBuffer();const wb=XLSX.read(bytes,{type:'array',cellDates:false});const ws=wb.Sheets[wb.SheetNames[0]];const source=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});if(!source.length)throw new Error('Excel sheet has no data rows');if(source.length>15000)throw new Error('Maximum 15,000 rows per import. Use a backend bulk-import job for larger files.');const rows=toRows(kind,source);const uniqueField=['assets','stock'].includes(kind)?'asset_tag':'hd_code';const ids=new Set();for(const r of rows){if(ids.has(r[uniqueField]))throw new Error('Duplicate '+uniqueField+': '+r[uniqueField]);ids.add(r[uniqueField])}const result=check(await db.rpc('import_master',{p_kind:kind,p_rows:rows}));notify(`${kind}: ${result} rows imported to Supabase`);await renderNegative();if(selected)await refreshHD()}
+// Each upload is staged in small batches. Live master is replaced only on finalize.
+const MAX_MASTER_ROWS = 200000;
+const UPLOAD_BATCH_SIZE = 1000;
+async function uploadMaster(file,kind){
+ if(profile.role!=='admin')throw new Error('Admin only');
+ if(!file)return;
+ const bytes=await file.arrayBuffer();
+ const wb=XLSX.read(bytes,{type:'array',cellDates:false});
+ const ws=wb.Sheets[wb.SheetNames[0]];
+ const source=XLSX.utils.sheet_to_json(ws,{defval:'',raw:true});
+ if(!source.length)throw new Error('Excel sheet has no data rows');
+ if(source.length>MAX_MASTER_ROWS)throw new Error(`Maximum ${MAX_MASTER_ROWS.toLocaleString()} data rows per file`);
+ const uniqueField=['assets','stock'].includes(kind)?'asset_tag':'hd_code';
+ const ids=new Set();
+ // Validate before touching the database. Convert per batch to avoid a second 200k-row object array.
+ for(let i=0;i<source.length;i+=UPLOAD_BATCH_SIZE){
+  const rows=toRows(kind,source.slice(i,i+UPLOAD_BATCH_SIZE));
+  for(const r of rows){if(ids.has(r[uniqueField]))throw new Error('Duplicate '+uniqueField+': '+r[uniqueField]);ids.add(r[uniqueField]);}
+ }
+ if(!confirm(`Replace entire ${kind} master with ${source.length.toLocaleString()} rows from ${file.name}? Previous master will be replaced only after all batches are uploaded.`))return;
+ const uploadId=crypto.randomUUID();
+ let completed=false;
+ try{
+  for(let i=0;i<source.length;i+=UPLOAD_BATCH_SIZE){
+   const rows=toRows(kind,source.slice(i,i+UPLOAD_BATCH_SIZE));
+   check(await db.rpc('stage_master_batch',{p_upload_id:uploadId,p_kind:kind,p_offset:i,p_rows:rows}));
+   notify(`${kind}: staged ${Math.min(i+rows.length,source.length).toLocaleString()} / ${source.length.toLocaleString()} rows. Do not close this page.`);
+  }
+  const result=check(await db.rpc('finalize_master_upload',{p_upload_id:uploadId,p_kind:kind,p_expected:source.length}));
+  completed=true;
+  notify(`${kind}: ${Number(result).toLocaleString()} rows replaced successfully`);
+  await renderNegative();if(selected)await refreshHD();
+ }finally{
+  if(!completed){try{await db.rpc('discard_master_upload',{p_upload_id:uploadId});}catch(_e){/* staging can be cleaned later */}}
+ }
+}
 document.querySelectorAll('[data-master]').forEach(input=>input.onchange=async()=>{try{input.disabled=true;await uploadMaster(input.files[0],input.dataset.master)}catch(e){notify(e.message,true)}finally{input.disabled=false;input.value=''}});
 $('toggle-upload').onclick=()=>{const collapsed=$('upload-content').classList.toggle('hidden');$('toggle-upload').textContent=collapsed?'View uploads':'Hide uploads'};
 if(configure())restore();
