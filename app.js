@@ -22,9 +22,49 @@ function setTheme(dark){document.body.classList.toggle('dark',dark);$('theme').t
 $('theme').onclick=()=>setTheme(!document.body.classList.contains('dark'));
 setTheme(localStorage.getItem('hd-theme')==='dark');
 $('capacity').innerHTML=CAPS.map(c=>`<option>${esc(c)}</option>`).join('');
-function configure(){const c=window.HD_CONFIG;if(!c||!c.supabaseUrl?.startsWith('https://')||!c.supabaseAnonKey||c.supabaseUrl.includes('YOUR-')||c.supabaseAnonKey.includes('YOUR_')||!window.supabase){$('setup').classList.remove('hidden');$('auth').classList.add('hidden');return false}db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);return true}
-async function restore(){try{const {data:{session}}=await db.auth.getSession();if(session)await enter(session.user)}catch(e){notify(e.message,true)}}
-async function enter(u){user=u;profile=check(await db.from('profiles').select('full_name,role,active').eq('user_id',u.id).single());if(!profile.active)throw new Error('Account disabled. Contact administrator.');$('auth').classList.add('hidden');$('workspace').classList.remove('hidden');$('logout').classList.remove('hidden');$('identity').textContent=(profile.full_name||u.email)+' · '+(profile.role==='admin'?'Admin':'Sales Team');document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='admin'));document.querySelectorAll('.sales-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='sales'));$('asset-tags').closest('.panel').classList.toggle('hidden',profile.role!=='admin');$('portal-role').textContent=profile.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';$('portal-user').textContent=profile.full_name||u.email;renderRoleNav();$('sidebar-role').textContent=profile.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';$('sidebar-user').textContent=profile.full_name||u.email;setSidebarOpen(window.innerWidth>1050);await Promise.all([renderNegative(),renderRequests(),renderHistory()]);}
+function configure(){const c=window.HD_CONFIG;if(!c||!c.supabaseUrl?.startsWith('https://')||!c.supabaseAnonKey||c.supabaseUrl.includes('YOUR-')||c.supabaseAnonKey.includes('YOUR_')||!window.supabase){$('setup').classList.remove('hidden');$('auth').classList.remove('hidden');showLoginError('Connection not configured. Add your Supabase URL and publishable key in config.js, then reload.');return false}db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);return true}
+function showLoginError(message){
+ const el=$('login-error');el.textContent=message;el.classList.remove('hidden');
+}
+function showLoginScreen(message=''){
+ user=null;profile=null;selected=null;cart=[];
+ $('auth').classList.remove('hidden');
+ $('workspace').classList.add('hidden');
+ $('logout').classList.add('hidden');
+ $('identity').textContent='';
+ if(message)showLoginError(message);
+}
+async function restore(){
+ try{
+  const result=await db.auth.getSession();
+  if(result.error)throw result.error;
+  if(result.data?.session?.user)await enter(result.data.session.user);
+ }catch(e){showLoginScreen('Unable to restore login: '+e.message)}
+}
+async function enter(u){
+ const result=await db.from('profiles').select('full_name,role,active').eq('user_id',u.id).single();
+ const p=check(result);
+ if(!p||!p.active)throw new Error('Account disabled or missing a profile. Contact your administrator.');
+ if(!['admin','sales'].includes(p.role))throw new Error('Invalid portal role. Contact your administrator.');
+ user=u;profile=p;
+ $('login-error').classList.add('hidden');
+ $('auth').classList.add('hidden');
+ $('workspace').classList.remove('hidden');
+ $('logout').classList.remove('hidden');
+ $('identity').textContent=(p.full_name||u.email)+' · '+(p.role==='admin'?'Admin':'Sales Team');
+ document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',p.role!=='admin'));
+ document.querySelectorAll('.sales-only').forEach(el=>el.classList.toggle('hidden',p.role!=='sales'));
+ $('portal-role').textContent=p.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';
+ $('portal-user').textContent=p.full_name||u.email;
+ $('sidebar-role').textContent=p.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';
+ $('sidebar-user').textContent=p.full_name||u.email;
+ $('upload-content').classList.add('hidden');
+ $('toggle-upload').textContent='View uploads';
+ renderRoleNav();
+ setSidebarOpen(window.innerWidth>1050);
+ try{await Promise.all([renderNegative(),renderRequests(),renderHistory()])}
+ catch(e){notify('Signed in, but data could not be loaded: '+e.message,true)}
+}
 
 function renderRoleNav(){
  const admin=profile?.role==='admin';
@@ -47,17 +87,30 @@ $('sidebar-overlay').addEventListener('click',()=>setSidebarOpen(false));
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('workspace').classList.contains('sidebar-collapsed'))setSidebarOpen(false)});
 window.addEventListener('resize',()=>{if(window.innerWidth>1050)$('sidebar-overlay').classList.add('hidden')});
 
-$('login').onsubmit=async e=>{e.preventDefault();try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await enter(data.user)}catch(err){alert(err.message)}};
-$('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
+$('login').onsubmit=async e=>{
+ e.preventDefault();
+ if(!db)return showLoginError('Supabase is not configured. Please complete config.js.');
+ const submit=$('login').querySelector('[type=submit]');
+ submit.disabled=true;submit.textContent='Signing in…';
+ $('login-error').classList.add('hidden');
+ try{
+  const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error)throw error;
+  if(!data?.user)throw new Error('Login succeeded without a user session.');
+  await enter(data.user);
+ }catch(err){showLoginError(err.message||'Unable to sign in. Check your account and Supabase configuration.')}
+ finally{submit.disabled=false;submit.innerHTML='Sign in securely <span aria-hidden="true">→</span>'}
+};
+$('logout').onclick=async()=>{try{await db.auth.signOut();showLoginScreen()}catch(e){notify(e.message,true)}};
 async function loadHD(){const code=$('hd-code').value.trim();if(!code)return;try{const rows=check(await db.from('hd_balances').select('*').eq('hd_code',code).limit(1));if(!rows.length)throw new Error('HD Code not found');selected=rows[0];cart=[];assetRecords=[];assetPage=0;await renderHD();}catch(e){notify(e.message,true)}}
 $('find-hd').onclick=loadHD;$('hd-code').onkeydown=e=>{if(e.key==='Enter')loadHD()};
 async function renderHD(){if(!selected)return;const h=selected;
- const fields=[['HD Code',h.hd_code],['HD Name',h.hd_name],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)],['Freezer Deposit',money(Number(h.total_deposit)-Number(h.security_deposit))],['Asset Value',money(h.asset_value)],['Original HD Balance',money(h.original_balance)],['Pending / Approved Requests',money(h.requested_amount)],['Available HD Balance',money(h.available_balance)],['No. of Assets',h.asset_count],['Assigned CFA',h.cfa_code]];
+ const fields=[['HD Code',h.hd_code],['HD Name',h.hd_name],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)],['Freezer Deposit',money(h.original_balance)],['Asset Value',money(h.asset_value)],['Original HD Balance',money(h.original_balance)],['Pending / Approved Requests',money(h.requested_amount)],['Available HD Balance',money(h.available_balance)],['No. of Assets',h.asset_count],['Assigned CFA',h.cfa_code]];
  $('hd-summary').innerHTML=fields.map(([label,value])=>`<div class="metric ${label==='HD Name'?'name':''} ${label==='Available HD Balance'?'balance':''}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('');
  const detailGroups=[
  [['HD Code',h.hd_code],['HD Name',h.hd_name],['Location',h.location]],
  [['Assigned CFA',h.cfa_code],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)]],
- [['Freezer Deposit',money(Number(h.total_deposit)-Number(h.security_deposit))],['Asset Value',money(h.asset_value)],['Available HD Balance',money(h.available_balance)]]
+ [['Freezer Deposit',money(h.original_balance)],['Asset Value',money(h.asset_value)],['Available HD Balance',money(h.available_balance)]]
  ];
  $('hd-details').innerHTML='<div class="detail-grid">'+detailGroups.map((g,i)=>'<div class="detail-block"><h3>HD Details '+(i+1)+'</h3>'+table(['Detail','Value'],g)+'</div>').join('')+'</div>';
  if(profile.role==='admin'){
