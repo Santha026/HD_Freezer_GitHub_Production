@@ -83,3 +83,43 @@ body.dark .login-hero{background:linear-gradient(145deg,#2e587a,#427a97)}
 body.dark .login-hero h2,body.dark .login-hero p,body.dark .hero-monogram{color:#e5f2ff}
 body.dark th{background:var(--sidebar);color:white}
 @media(max-width:920px){.login-landing{grid-template-columns:1fr}.login-hero{min-height:360px;padding:40px 20px 95px}.login-brands{margin-top:30px}.login-card{width:100%}}
+
+/* Visual-match login: exactly the three requested brand treatments, with the blue HAP reference palette. */
+body:has(#auth:not(.hidden)) {background:#9BDDF5}
+body:has(#auth:not(.hidden)) header{background:#0B132B;min-height:76px;padding:12px clamp(20px,3vw,56px)}
+body:has(#auth:not(.hidden)) .shell{max-width:none;margin:0;padding:0}
+body:has(#auth:not(.hidden)) .site-footer{background:#F4F7FC}
+.brand-title .brand-mark{color:#5BC0EB;letter-spacing:-3px}
+.login-landing{position:relative;display:block;min-height:min(790px,calc(100vh - 78px));margin:0;background:#9BDDF5;isolation:isolate;overflow:hidden}
+.login-hero{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;border-radius:0;background:linear-gradient(165deg,#A6E3F7 0%,#8FD5F0 100%);padding:35px 470px 105px 40px;color:#526B7B}
+.login-hero-content{position:relative;z-index:2;width:100%;max-width:950px;text-align:center;transform:translateY(-12px)}
+.hero-monogram{font-family:Arial,Helvetica,sans-serif;font-size:clamp(104px,13vw,195px);font-weight:800;letter-spacing:-.09em;line-height:1;color:#566D7A;opacity:1;margin-right:.09em}
+.login-hero h2{font-size:clamp(27px,2.7vw,44px);line-height:1.15;margin:12px 0 10px;color:#526B7B;font-weight:800}
+.login-hero .hero-subtitle{font-size:clamp(16px,1.4vw,21px);font-weight:500;color:#58758A}
+.login-brands{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));align-items:center;justify-content:center;gap:clamp(12px,2vw,30px);width:min(820px,100%);margin:56px auto 0;z-index:2}
+.login-brands .brand-tile{min-width:0;min-height:104px;display:flex;align-items:center;justify-content:center;background:#FFFFFF;border:1px solid #dcebf4;border-radius:15px;box-shadow:0 12px 28px #37617d20;padding:12px 8px}
+.login-brands .brand-tile strong{font-size:clamp(21px,2.3vw,38px);line-height:1.05;white-space:nowrap;font-weight:900}
+.login-brands .brand-arokya{color:#D51844;font-style:italic;letter-spacing:-1px}
+.login-brands .brand-hatsun{display:inline-block;background:#172C75;color:#FFFFFF;border-radius:6px;font-style:italic;transform:skew(-5deg);padding:9px 13px}
+.login-brands .brand-daily{display:inline-block;background:#F05A28;color:#FFFFFF;padding:10px 13px;line-height:.82;text-align:left}
+.login-brands .brand-daily small{display:block;color:#FFFFFF;font-size:.52em;text-align:right;margin-top:7px}
+.login-hero .hero-hills{position:absolute;bottom:-100px;left:-7%;width:114%;height:220px;border-radius:48% 55% 0 0;background:linear-gradient(180deg,#42BF7C,#2AA66E);transform:rotate(-1deg);z-index:1}
+.login-card{position:absolute;z-index:3;right:clamp(22px,4vw,75px);top:50%;transform:translateY(-50%);width:min(405px,calc(100% - 40px));padding:34px;border-radius:18px;background:#FFFFFF;border:1px solid #E2E8F0;box-shadow:0 18px 55px #0B132B35;align-self:auto}
+.login-card-top{display:flex;align-items:center;gap:8px;color:#1C4ED8;font-size:11px;letter-spacing:1.4px;font-weight:800;margin-bottom:15px}
+.login-lock{color:#16A34A;font-size:14px}
+.login-card h2{font-size:30px;line-height:1.15;color:#0B132B;margin:0 0 10px}
+.login-card .muted{color:#61718A;font-size:14px;margin:0 0 24px}
+.login-card form{display:grid;gap:18px}
+.login-card label{font-size:13px;color:#334155;min-width:0}
+.login-card input{height:45px;font-size:14px;color:#1E293B;background:#FFFFFF;border:1px solid #CBD5E1}
+.login-card input:focus{outline:3px solid #5BC0EB70;border-color:#1C4ED8}
+.login-card .login-submit{display:flex;align-items:center;justify-content:center;gap:10px;min-height:47px;font-size:14px;background:#1C4ED8;color:#FFFFFF}
+.login-security{margin-top:23px;padding-top:18px;border-top:1px solid #E2E8F0;color:#64748B;font-size:12px;line-height:1.6}
+body.dark:has(#auth:not(.hidden)) .login-hero{background:linear-gradient(155deg,#A6E3F7,#8FD5F0)}
+body.dark:has(#auth:not(.hidden)) .login-hero h2,body.dark:has(#auth:not(.hidden)) .login-hero .hero-subtitle,body.dark:has(#auth:not(.hidden)) .hero-monogram{color:#526B7B}
+body.dark:has(#auth:not(.hidden)) .login-card{background:#FFFFFF;color:#0B132B}
+body.dark:has(#auth:not(.hidden)) .login-card label{color:#334155}
+body.dark:has(#auth:not(.hidden)) .login-card input{background:#FFFFFF;color:#1E293B;border-color:#CBD5E1}
+@media(max-width:1150px){.login-hero{padding-right:380px}.login-card{right:20px;width:350px}.login-brands{gap:10px}.login-brands .brand-tile{min-height:88px}}
+@media(max-width:850px){.login-landing{min-height:0;display:flex;flex-direction:column;overflow:visible}.login-hero{position:relative;inset:auto;min-height:440px;padding:35px 18px 100px}.login-hero-content{transform:none}.hero-monogram{font-size:100px}.login-hero h2{font-size:28px}.login-brands{margin-top:35px;gap:10px}.login-brands .brand-tile{min-height:75px;padding:8px 5px}.login-brands .brand-tile strong{font-size:clamp(15px,4vw,26px)}.login-card{position:relative;top:auto;right:auto;transform:none;align-self:center;width:min(440px,calc(100% - 32px));margin:-60px auto 35px;padding:28px}.login-hero .hero-hills{height:145px;bottom:-75px}}
+@media(max-width:420px){.login-brands{grid-template-columns:repeat(3,minmax(0,1fr))}.login-brands .brand-tile strong{font-size:15px}.login-brands .brand-hatsun{padding:7px}.login-brands .brand-daily{padding:7px}.login-hero h2{font-size:24px}}
