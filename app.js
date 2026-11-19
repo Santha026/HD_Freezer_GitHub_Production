@@ -24,15 +24,28 @@ setTheme(localStorage.getItem('hd-theme')==='dark');
 $('capacity').innerHTML=CAPS.map(c=>`<option>${esc(c)}</option>`).join('');
 function configure(){const c=window.HD_CONFIG;if(!c||!c.supabaseUrl?.startsWith('https://')||!c.supabaseAnonKey||c.supabaseUrl.includes('YOUR-')||c.supabaseAnonKey.includes('YOUR_')||!window.supabase){$('setup').classList.remove('hidden');$('auth').classList.add('hidden');return false}db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);return true}
 async function restore(){try{const {data:{session}}=await db.auth.getSession();if(session)await enter(session.user)}catch(e){notify(e.message,true)}}
-async function enter(u){user=u;profile=check(await db.from('profiles').select('full_name,role,active').eq('user_id',u.id).single());if(!profile.active)throw new Error('Account disabled. Contact administrator.');$('auth').classList.add('hidden');$('workspace').classList.remove('hidden');$('logout').classList.remove('hidden');$('identity').textContent=(profile.full_name||u.email)+' · '+(profile.role==='admin'?'Admin':'Sales Team');document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='admin'));document.querySelectorAll('.sales-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='sales'));$('asset-tags').closest('.panel').classList.toggle('hidden',profile.role!=='admin');$('portal-role').textContent=profile.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';$('portal-user').textContent=profile.full_name||u.email;renderRoleNav();await Promise.all([renderNegative(),renderRequests(),renderHistory()]);}
+async function enter(u){user=u;profile=check(await db.from('profiles').select('full_name,role,active').eq('user_id',u.id).single());if(!profile.active)throw new Error('Account disabled. Contact administrator.');$('auth').classList.add('hidden');$('workspace').classList.remove('hidden');$('logout').classList.remove('hidden');$('identity').textContent=(profile.full_name||u.email)+' · '+(profile.role==='admin'?'Admin':'Sales Team');document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='admin'));document.querySelectorAll('.sales-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='sales'));$('asset-tags').closest('.panel').classList.toggle('hidden',profile.role!=='admin');$('portal-role').textContent=profile.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';$('portal-user').textContent=profile.full_name||u.email;renderRoleNav();$('sidebar-role').textContent=profile.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';$('sidebar-user').textContent=profile.full_name||u.email;setSidebarOpen(window.innerWidth>1050);await Promise.all([renderNegative(),renderRequests(),renderHistory()]);}
 
 function renderRoleNav(){
  const admin=profile?.role==='admin';
  const links=admin?[
  ['HD Search & Balances','hd-search-section'],['HD Complete Details','hd-details-section'],['Capacity Summary','capacity-summary-section'],['Asset Tag Details','asset-details-section'],['Negative Balances','negative-section'],['Admin Approvals','approvals-section'],['Allocation History','allocation-history-section'],['Master Uploads','master-section']
  ]:[['HD Search & Balances','hd-search-section'],['HD Complete Details','hd-details-section'],['Capacity Summary','capacity-summary-section'],['CFA Available Stock','sales-request-section'],['Cooler Requests','sales-request-section'],['My Requests','my-requests-section'],['Negative Balances','negative-section']];
- $('role-nav').innerHTML=links.map(([label,id])=>`<a href="#${id}">${esc(label)}</a>`).join('');
+ $('role-nav').innerHTML=links.map(([label,id],i)=>`<a href="#${id}" data-section="${id}" class="sidebar-link"><span class="nav-symbol" aria-hidden="true">${['⌕','▦','▥','▤','◉','✓','◷','⇧'][i%8]}</span><span>${esc(label)}</span></a>`).join('');document.querySelectorAll('.sidebar-link').forEach(link=>link.addEventListener('click',()=>{document.querySelectorAll('.sidebar-link').forEach(x=>x.classList.remove('active'));link.classList.add('active');if(window.innerWidth<=1050)setSidebarOpen(false)}));
 }
+
+
+// Accessible sidebar: supports Microsoft Edge, Chrome and narrow screens.
+function setSidebarOpen(open){
+ const workspace=$('workspace');workspace.classList.toggle('sidebar-collapsed',!open);
+ $('sidebar-toggle').setAttribute('aria-expanded',String(open));
+ $('sidebar-overlay').classList.toggle('hidden',!open||window.innerWidth>1050);
+}
+$('sidebar-toggle').addEventListener('click',()=>setSidebarOpen($('workspace').classList.contains('sidebar-collapsed')));
+$('sidebar-close').addEventListener('click',()=>setSidebarOpen(false));
+$('sidebar-overlay').addEventListener('click',()=>setSidebarOpen(false));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('workspace').classList.contains('sidebar-collapsed'))setSidebarOpen(false)});
+window.addEventListener('resize',()=>{if(window.innerWidth>1050)$('sidebar-overlay').classList.add('hidden')});
 
 $('login').onsubmit=async e=>{e.preventDefault();try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await enter(data.user)}catch(err){alert(err.message)}};
 $('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
