@@ -25,7 +25,15 @@
   </div>
 </section>
 <div id="workspace" class="hidden">
-<div class="role-banner"><span id="portal-role">Portal</span><span id="portal-user"></span></div><nav class="role-nav" id="role-nav" aria-label="Portal sections"></nav><div id="notice" role="status" aria-live="polite"></div>
+<button id="sidebar-toggle" class="sidebar-toggle" type="button" aria-controls="portal-sidebar" aria-expanded="true" aria-label="Toggle navigation menu"><span aria-hidden="true">☰</span> <span>Menu</span></button>
+<div id="sidebar-overlay" class="sidebar-overlay hidden" aria-hidden="true"></div>
+<aside id="portal-sidebar" class="portal-sidebar" aria-label="Main navigation">
+ <div class="sidebar-head"><span class="sidebar-logo">HAP</span><div><strong>HD Fresh Asset Portal</strong><small id="sidebar-role">Portal Navigation</small></div><button id="sidebar-close" class="sidebar-close" aria-label="Close navigation">×</button></div>
+ <nav class="role-nav" id="role-nav" aria-label="Portal sections"></nav>
+ <div class="sidebar-bottom"><span id="sidebar-user"></span><small>HAP HD Fresh Asset Portal</small></div>
+</aside>
+<div id="workspace-content" class="workspace-content">
+<div class="role-banner"><span id="portal-role">Portal</span><span id="portal-user"></span></div><div id="notice" role="status" aria-live="polite"></div>
 
 <section id="hd-search-section" class="panel"><h2>02 · HD Search & Balances</h2><div class="row"><label class="grow">HD Code<input id="hd-code" placeholder="Enter HD Code, e.g. 1038471"></label><button id="find-hd">Search HD</button></div><div id="hd-summary" class="cards"></div></section>
 <div class="layout"><div>
@@ -37,7 +45,7 @@
 <section id="approvals-section" class="panel admin-only hidden"><h2>08 · Admin Approvals</h2><div id="approvals" class="table-wrap"></div><div class="pager"><button id="req-prev" class="secondary">Previous</button><span id="req-page"></span><button id="req-next" class="secondary">Next</button></div></section>
 <section id="allocation-history-section" class="panel admin-only hidden"><h2>09 · Allocation History & Email Drafts</h2><p class="muted">Approval history is saved in Supabase. Download CSV for Excel and generate a draft for the mapped SDM and CFA. Email sending requires a separate email service.</p><button id="export-history">Download Allocation History CSV</button><div id="allocation-history" class="table-wrap"></div></section>
 </div><aside><section id="negative-section" class="panel"><h2>Negative HD Balance Alerts</h2><p class="muted">HD Code, HD Name and Negative Balance. 20 per page.</p><div id="negative-list" class="table-wrap"></div><div class="pager"><button id="neg-prev" class="secondary">Previous</button><span id="neg-page"></span><button id="neg-next" class="secondary">Next</button></div></section><section class="panel admin-only hidden" id="master-section"><div class="section-title"><h2>01 · Admin Excel Master Uploads</h2><button id="toggle-upload" class="secondary">View uploads</button></div><div id="upload-content" class="hidden"><p class="muted">One Excel sheet per master. Import replaces that entire master atomically. Review the uploaded file before replacing production data. Maximum 15,000 rows per file in this starter.</p><div class="upload-grid"><label>HD Details<input type="file" data-master="hds" accept=".xlsx,.xls"></label><label>HD-wise CFA & Sales Team<input type="file" data-master="contacts" accept=".xlsx,.xls"></label><label>HD Asset Details<input type="file" data-master="assets" accept=".xlsx,.xls"></label><label>CFA In-Hand Stock<input type="file" data-master="stock" accept=".xlsx,.xls"></label></div></div></section></aside></div>
-</div></main><footer class="site-footer">© <span id="copyright-year"></span> HAP HD Fresh Asset Portal. All rights reserved.</footer>
+</div></div></main><footer class="site-footer">© <span id="copyright-year"></span> HAP HD Fresh Asset Portal. All rights reserved.</footer>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="config.js"></script><script src="app.js"></script></body></html>
