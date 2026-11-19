@@ -2,7 +2,28 @@
 <header><div class="brand-title"><div class="brand-mark">HAP</div><div><h1>HAP HD Fresh Asset Portal</h1><small>Secure HD asset management</small></div></div><div class="header-actions"><span id="identity"></span><button id="theme" class="secondary">🌙 Dark</button><button id="logout" class="secondary hidden">Sign out</button></div></header>
 <main class="shell">
 <section id="setup" class="panel hidden"><h2>Configuration needed</h2><p>Copy <code>config.example.js</code> to <code>config.js</code>, enter the Supabase project URL and publishable/anon key, and publish the file with the site. Never use a secret/service-role key.</p></section>
-<section id="auth" class="login-landing"><div class="login-hero"><div class="hero-monogram">HAP</div><h2>HAP HD Fresh Asset Portal</h2><p>Hatsun Agro Product Limited</p><div class="login-brands" aria-label="Brands"><span class="brand-arokya">Arokya</span><span class="brand-hatsun">Hatsun</span><span class="brand-daily">HAP <small>daily</small></span></div><div class="hero-hills" aria-hidden="true"></div></div><div class="panel login-card"><h2>Portal Sign in</h2><p class="muted">Sign in with the account issued by your administrator. Your Admin or Sales Team portal opens automatically based on your account role.</p><form id="login"><label>Email<input type="email" id="email" required autocomplete="username"></label><label>Password<input type="password" id="password" required autocomplete="current-password"></label><button type="submit">Sign in securely</button></form><p class="login-security">Admin and Sales Team access is controlled by Supabase permissions.</p></div></section>
+<section id="auth" class="login-landing" aria-label="HAP HD Fresh Asset Portal login">
+  <div class="login-hero">
+    <div class="login-hero-content">
+      <div class="hero-monogram" aria-label="HAP">HAP</div>
+      <h2>HAP HD Fresh Asset Portal</h2>
+      <p class="hero-subtitle">Hatsun Agro Product Limited</p>
+      <div class="login-brands" aria-label="Arokya, Hatsun and HAP Daily brands">
+        <span class="brand-tile"><strong class="brand-arokya">Arokya</strong></span>
+        <span class="brand-tile"><strong class="brand-hatsun">Hatsun</strong></span>
+        <span class="brand-tile"><strong class="brand-daily">HAP <small>daily</small></strong></span>
+      </div>
+    </div>
+    <div class="hero-hills" aria-hidden="true"></div>
+  </div>
+  <div class="panel login-card">
+    <div class="login-card-top"><span class="login-lock" aria-hidden="true">●</span> SECURE ACCESS</div>
+    <h2>Welcome back</h2>
+    <p class="muted">Sign in to your Admin or Sales Team portal.</p>
+    <form id="login"><label>Email address<input type="email" id="email" placeholder="name@company.com" required autocomplete="username"></label><label>Password<input type="password" id="password" placeholder="Enter your password" required autocomplete="current-password"></label><button type="submit" class="btn-primary login-submit">Sign in securely <span aria-hidden="true">→</span></button></form>
+    <div class="login-security">Your portal permissions are assigned to your account. Contact your administrator for access.</div>
+  </div>
+</section>
 <div id="workspace" class="hidden">
 <div class="role-banner"><span id="portal-role">Portal</span><span id="portal-user"></span></div><nav class="role-nav" id="role-nav" aria-label="Portal sections"></nav><div id="notice" role="status" aria-live="polite"></div>
 
