@@ -158,3 +158,13 @@ body.dark #workspace table th{background:#10213a;color:#eaf4ff}
 @media(max-width:1050px){.portal-sidebar{width:min(285px,85vw)}.workspace-content{margin-left:0}.sidebar-toggle{left:0;top:82px;border-radius:0 10px 10px 0}#workspace.sidebar-collapsed .portal-sidebar{transform:translateX(-100%)}#workspace:not(.sidebar-collapsed) .sidebar-toggle{left:min(285px,85vw)}.sidebar-overlay:not(.hidden){display:block}}
 @media(min-width:1051px){.sidebar-overlay{display:none!important}}
 @media(prefers-reduced-motion:reduce){.portal-sidebar,.workspace-content,.sidebar-toggle,#workspace .role-nav a{transition:none!important}}
+
+/* Post-login usability and login errors */
+.login-error{background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;border-radius:10px;padding:12px;margin:12px 0;font-size:13px;line-height:1.5}
+#workspace .workspace-content{padding-top:60px}
+#workspace .sidebar-toggle{top:85px}
+#workspace .role-banner{min-height:48px}
+#workspace .sidebar-link.active{box-shadow:inset 3px 0 #5BC0EB}
+#workspace .sidebar-link{font-size:13px}
+#workspace .sidebar-toggle:focus-visible,#workspace .sidebar-link:focus-visible{outline:3px solid #5BC0EB;outline-offset:2px}
+@media(max-width:1050px){#workspace .workspace-content{padding-top:58px}#workspace .sidebar-toggle{top:82px}}
