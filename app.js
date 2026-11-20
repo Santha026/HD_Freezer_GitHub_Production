@@ -66,15 +66,79 @@ async function enter(u){
  catch(e){notify('Signed in, but data could not be loaded: '+e.message,true)}
 }
 
-function renderRoleNav(){
- const admin=profile?.role==='admin';
- const links=admin?[
- ['HD Search & Balances','hd-search-section'],['HD Complete Details','hd-details-section'],['Capacity Summary','capacity-summary-section'],['Asset Tag Details','asset-details-section'],['Negative Balances','negative-section'],['Admin Approvals','approvals-section'],['Allocation History','allocation-history-section'],['Master Uploads','master-section']
- ]:[['HD Search & Balances','hd-search-section'],['HD Complete Details','hd-details-section'],['Capacity Summary','capacity-summary-section'],['CFA Available Stock','sales-request-section'],['Cooler Requests','sales-request-section'],['My Requests','my-requests-section'],['Negative Balances','negative-section']];
- $('role-nav').innerHTML=links.map(([label,id],i)=>`<a href="#${id}" data-section="${id}" class="sidebar-link"><span class="nav-symbol" aria-hidden="true">${['⌕','▦','▥','▤','◉','✓','◷','⇧'][i%8]}</span><span>${esc(label)}</span></a>`).join('');document.querySelectorAll('.sidebar-link').forEach(link=>link.addEventListener('click',()=>{document.querySelectorAll('.sidebar-link').forEach(x=>x.classList.remove('active'));link.classList.add('active');if(window.innerWidth<=1050)setSidebarOpen(false)}));
+// One selected page at a time. HD Search and HD Details are a single view.
+const PAGE_GROUPS={
+ 'hd-search-section':['hd-search-section','hd-details-section'],
+ 'capacity-summary-section':['capacity-summary-section'],
+ 'asset-details-section':['asset-details-section'],
+ 'negative-section':['negative-section'],
+ 'approvals-section':['approvals-section'],
+ 'allocation-history-section':['allocation-history-section'],
+ 'master-section':['master-section'],
+ 'sales-request-section':['sales-request-section'],
+ 'my-requests-section':['my-requests-section']
+};
+const ROLE_PAGES={
+ admin:[['HD Search & Details','hd-search-section','⌕'],['Capacity Summary','capacity-summary-section','▥'],['Asset Tag Details','asset-details-section','▤'],['Negative HD Balances','negative-section','⚠'],['Admin Approvals','approvals-section','✓'],['Allocation History','allocation-history-section','◷'],['Master Uploads','master-section','⇧']],
+ sales:[['HD Search & Details','hd-search-section','⌕'],['Capacity Summary','capacity-summary-section','▥'],['CFA Stock & Cooler Requests','sales-request-section','▤'],['My Requests','my-requests-section','◷'],['Negative HD Balances','negative-section','⚠']]
+};
+let currentPage='hd-search-section';
+function selectPortalPage(page,updateHash=true){
+ const allowed=(ROLE_PAGES[profile?.role]||[]).map(x=>x[1]);
+ if(!allowed.includes(page))page='hd-search-section';
+ currentPage=page;
+ const visible=new Set(PAGE_GROUPS[page]||[]);
+ Object.values(PAGE_GROUPS).flat().forEach(id=>{
+  const el=$(id);if(!el)return;
+  el.classList.toggle('portal-view-hidden',!visible.has(id));
+ });
+ document.querySelectorAll('#role-nav .sidebar-link').forEach(a=>{
+  const active=a.dataset.section===page;
+  a.classList.toggle('active',active);
+  if(active)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');
+ });
+ const item=(ROLE_PAGES[profile.role]||[]).find(x=>x[1]===page);
+ $('current-page-name').textContent=item?.[0]||'HD Search & Details';
+ if(updateHash&&location.hash!=='#'+page)history.replaceState(null,'','#'+page);
+ if(window.innerWidth<=1050)setSidebarOpen(false);
+ window.scrollTo({top:0,behavior:'instant'});
 }
+function renderRoleNav(){
+ const links=ROLE_PAGES[profile?.role]||[];
+ $('role-nav').innerHTML=links.map(([label,id,symbol])=>`<a href="#${id}" data-section="${id}" class="sidebar-link"><span class="nav-symbol" aria-hidden="true">${symbol}</span><span>${esc(label)}</span></a>`).join('');
+ $('role-nav').querySelectorAll('.sidebar-link').forEach(link=>link.addEventListener('click',e=>{e.preventDefault();selectPortalPage(link.dataset.section)}));
+ selectPortalPage(location.hash.slice(1),false);
+}
+window.addEventListener('hashchange',()=>{if(profile)selectPortalPage(location.hash.slice(1),false)});
 
-
+// Ten sidebar visual models, matching the supplied 10-model HTML's navigation palette.
+// This affects only the sidebar, not the login page, cards, tables or application data.
+const SIDEBAR_MODELS={
+ 1:['#0e1c37','#2563eb','#aebdd8','#ffffff'],
+ 2:['#ffffff','#0c72de','#50637b','#18375b'],
+ 3:['#142a32','#079e9d','#aebdd8','#ffffff'],
+ 4:['#24183c','#8052d9','#aebdd8','#ffffff'],
+ 5:['#161d29','#ef7b25','#aebdd8','#ffffff'],
+ 6:['#081f3d','#00a4cf','#aebdd8','#ffffff'],
+ 7:['#14342c','#1d996a','#aebdd8','#ffffff'],
+ 8:['#301b27','#cc477b','#aebdd8','#ffffff'],
+ 9:['#111827','#475569','#aebdd8','#ffffff'],
+ 10:['#12295c','#e0a31b','#aebdd8','#ffffff']
+};
+function setMenuModel(model){
+ const i=SIDEBAR_MODELS[model]?Number(model):1;
+ const [bg,active,muted,ink]=SIDEBAR_MODELS[i];
+ const side=$('portal-sidebar');
+ side.style.setProperty('--menu-bg',bg);
+ side.style.setProperty('--menu-active',active);
+ side.style.setProperty('--menu-muted',muted);
+ side.style.setProperty('--menu-ink',ink);
+ side.dataset.menuModel=String(i);
+ $('menu-model').value=String(i);
+ try{localStorage.setItem('hap-sidebar-model',String(i))}catch(_){}
+}
+$('menu-model').addEventListener('change',e=>setMenuModel(e.target.value));
+setMenuModel((()=>{try{return localStorage.getItem('hap-sidebar-model')}catch(_){return 1}})());
 // Accessible sidebar: supports Microsoft Edge, Chrome and narrow screens.
 function setSidebarOpen(open){
  const workspace=$('workspace');workspace.classList.toggle('sidebar-collapsed',!open);
