@@ -230,3 +230,36 @@ body.dark #workspace .summary-half h3,body.dark #workspace .asset-half h3,body.d
 @media(max-width:850px){
  #workspace #hd-summary,#workspace #asset-tags,#workspace #negative-list{grid-template-columns:1fr}
 }
+
+/* 2026-11-21: Explicit 2 x 15 tables, replacing blue-bordered KPI tiles. */
+#workspace #hd-summary,#workspace #hd-details .detail-grid,#workspace #asset-tags,#workspace #negative-list{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:16px!important;align-items:start;
+}
+#workspace #hd-summary>.summary-half,#workspace #hd-details .detail-block,#workspace #asset-tags>.asset-half,#workspace #negative-list>.negative-half{
+ min-width:0;border:1px solid #d9e4f2;border-radius:12px;overflow:auto;background:#fff;box-shadow:0 4px 16px #1a38550b;
+}
+#workspace #hd-summary .summary-half h3,#workspace #hd-details .detail-block h3,#workspace #asset-tags .asset-half h3,#workspace #negative-list .negative-half h3{
+ margin:0;background:#edf4ff;color:#193f7c;border-left:0;border-bottom:2px solid #cbdcf9;padding:12px 14px;
+}
+#workspace #hd-summary table,#workspace #hd-details table,#workspace #asset-tags table,#workspace #negative-list table{width:100%;table-layout:fixed}
+#workspace #hd-summary th,#workspace #hd-details th,#workspace #asset-tags th,#workspace #negative-list th{background:#122447;color:#fff}
+#workspace #hd-summary td,#workspace #hd-details td,#workspace #asset-tags td,#workspace #negative-list td{white-space:normal;overflow-wrap:anywhere}
+#workspace #hd-summary .metric{border:0!important}
+#workspace #live-status{margin-left:auto;padding:5px 10px;border:1px solid #7ca9e8;border-radius:20px;font-size:11px;color:#c6edff;white-space:nowrap}
+body.dark #workspace #hd-summary>.summary-half,body.dark #workspace #hd-details .detail-block,body.dark #workspace #asset-tags>.asset-half,body.dark #workspace #negative-list>.negative-half{background:#15263b;border-color:#344962}
+body.dark #workspace #hd-summary h3,body.dark #workspace #hd-details h3,body.dark #workspace #asset-tags h3,body.dark #workspace #negative-list h3{background:#263e59;color:#fff}
+@media(max-width:850px){#workspace #hd-summary,#workspace #hd-details .detail-grid,#workspace #asset-tags,#workspace #negative-list{grid-template-columns:1fr!important}}
+
+/* 2026-11-21: Restore previous HD KPI cards for Admin and Sales Team. */
+#hd-summary.cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+#hd-summary .metric{background:linear-gradient(160deg,#f2f7ff,#e9f2ff);border:1px solid #dbe8fa;border-top:3px solid #2563eb;box-shadow:0 3px 12px #143e6a10;border-radius:12px;padding:15px}
+#hd-summary .metric.balance{background:#eaf9f0;border-top-color:#16a34a}
+#hd-summary .metric span{display:block;color:#526b86;font-size:12px}
+#hd-summary .metric strong{font-size:clamp(16px,1.6vw,24px);color:#102b50;overflow-wrap:anywhere}
+#hd-summary .metric.name{grid-column:span 2}
+#approvals-section .pending-badge{display:inline-flex;align-items:center;justify-content:center;background:#dc2626;color:white;border-radius:999px;padding:4px 10px;font-size:12px;margin-left:8px}
+#approvals-section .request-alert{background:#e7f6ed;border:1px solid #9adbb5;color:#126333;border-radius:10px;padding:12px 14px;margin:12px 0;font-weight:650}
+#role-nav .sidebar-link[data-pending]:not([data-pending="0"])::after{content:attr(data-pending);margin-left:auto;background:#dc2626;color:white;border-radius:999px;padding:2px 7px;font-size:11px;font-weight:800}
+@media(max-width:950px){#hd-summary.cards{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:530px){#hd-summary.cards{grid-template-columns:1fr}#hd-summary .metric.name{grid-column:span 1}}
+body.dark #hd-summary .metric{background:#1d3552;border-color:#3b5374}body.dark #hd-summary .metric strong{color:#e3edfb}
