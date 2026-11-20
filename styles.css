@@ -198,3 +198,35 @@ body.dark #workspace table th{background:#10213a;color:#eaf4ff}
 #workspace .panel{box-shadow:0 6px 24px #11234b12;border-radius:14px}
 #workspace .cards .metric{border-top:3px solid #245deb}
 @media(max-width:1050px){#workspace .sidebar-toggle{left:12px;top:84px}#workspace:not(.sidebar-collapsed) .sidebar-toggle{left:min(285px,85vw)}}
+
+/* Revised data presentation: two tables per selected section, up to 15 rows each. */
+#workspace #hd-summary,#workspace #asset-tags,#workspace #negative-list{
+ display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;
+}
+#workspace .summary-half,#workspace .asset-half,#workspace .negative-half{
+ min-width:0;overflow:auto;border:1px solid #dce5ef;border-radius:12px;background:#fff;
+ box-shadow:0 3px 14px #102b5010;
+}
+#workspace .summary-half h3,#workspace .asset-half h3,#workspace .negative-half h3{
+ margin:0;padding:13px 15px;background:#eaf2ff;color:#173c78;font-size:13px;
+ border-left:4px solid #2563eb;
+}
+#workspace .summary-half table,#workspace .asset-half table,#workspace .negative-half table{width:100%;table-layout:fixed}
+#workspace .summary-half th,#workspace .asset-half th,#workspace .negative-half th{
+ background:#122447;color:#fff;font-weight:700;
+}
+#workspace .summary-half td,#workspace .asset-half td,#workspace .negative-half td{
+ white-space:normal;overflow-wrap:anywhere;vertical-align:top;
+}
+#workspace .summary-half th:first-child,#workspace .summary-half td:first-child{width:47%}
+#workspace .negative-half th:nth-child(1){width:24%}
+#workspace .negative-half th:nth-child(2){width:45%}
+#workspace .negative-half th:nth-child(3){width:31%}
+#workspace .asset-half th:nth-child(1){width:44%}
+#workspace .asset-half th:nth-child(2){width:30%}
+#workspace .asset-half th:nth-child(3){width:26%}
+body.dark #workspace .summary-half,body.dark #workspace .asset-half,body.dark #workspace .negative-half{background:#15263b;border-color:#344962}
+body.dark #workspace .summary-half h3,body.dark #workspace .asset-half h3,body.dark #workspace .negative-half h3{background:#203b60;color:#eaf2ff}
+@media(max-width:850px){
+ #workspace #hd-summary,#workspace #asset-tags,#workspace #negative-list{grid-template-columns:1fr}
+}
