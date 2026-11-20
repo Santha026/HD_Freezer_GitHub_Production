@@ -143,7 +143,9 @@ async function loadHD(){const code=$('hd-code').value.trim();if(!code)return;try
 $('find-hd').onclick=loadHD;$('hd-code').onkeydown=e=>{if(e.key==='Enter')loadHD()};
 async function renderHD(){if(!selected)return;const h=selected;
  const fields=[['HD Code',h.hd_code],['HD Name',h.hd_name],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)],['Freezer Deposit',money(h.original_balance)],['Asset Value',money(h.asset_value)],['Original HD Balance',money(h.original_balance)],['Pending / Approved Requests',money(h.requested_amount)],['Available HD Balance',money(h.available_balance)],['No. of Assets',h.asset_count],['Assigned CFA',h.cfa_code]];
- $('hd-summary').innerHTML=fields.map(([label,value])=>`<div class="metric ${label==='HD Name'?'name':''} ${label==='Available HD Balance'?'balance':''}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('');
+ $('hd-summary').innerHTML=[fields.slice(0,6),fields.slice(6)].map((group,i)=>
+  `<div class="summary-half"><h3>${i===0?'HD Information & Deposits':'Asset & Balance Summary'}</h3>${table(['Field','Value'],group)}</div>`
+ ).join('');
  const detailGroups=[
  [['HD Code',h.hd_code],['HD Name',h.hd_name],['Location',h.location]],
  [['Assigned CFA',h.cfa_code],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)]],
@@ -159,21 +161,22 @@ async function renderHD(){if(!selected)return;const h=selected;
  if(profile.role==='sales'){await renderStock();renderCart();await renderMyRequests();}
 }
 function renderAssetPage(){
- const total=Math.max(1,Math.ceil(assetRecords.length/40));
+ const perTable=15,perPage=perTable*2;
+ const total=Math.max(1,Math.ceil(assetRecords.length/perPage));
  assetPage=Math.max(0,Math.min(assetPage,total-1));
- const pageItems=assetRecords.slice(assetPage*40,assetPage*40+40);
- const halves=[pageItems.slice(0,20),pageItems.slice(20,40)];
+ const pageItems=assetRecords.slice(assetPage*perPage,(assetPage+1)*perPage);
+ const halves=[pageItems.slice(0,perTable),pageItems.slice(perTable,perPage)];
  $('asset-tags').innerHTML=assetRecords.length?halves.map((items,i)=>{
-  const start=assetPage*40+i*20+1;
+  const start=assetPage*perPage+i*perTable+1;
   const end=start+items.length-1;
   const rows=items.map(a=>[a.asset_tag,a.capacity,money(a.asset_value)]);
-  while(rows.length<20)rows.push(['\u00a0','\u00a0','\u00a0']);
-  return '<div class="asset-half"><h3>Asset Details '+(items.length?start+'–'+end:'No additional assets')+'</h3>'+table(['Asset Tag Number','Capacity','Asset Value'],rows)+'</div>'
+  return `<div class="asset-half"><h3>Asset Tags · Table ${i+1} ${items.length?'('+start+'–'+end+')':''}</h3>`+
+    table(['Asset Tag Number','Capacity','Asset Value'],rows)+'</div>';
  }).join(''):'No assets mapped to this HD.';
- $('asset-page').textContent='Page '+(assetPage+1)+' of '+total+' · '+assetRecords.length+' assets';
+ $('asset-page').textContent='Page '+(assetPage+1)+' of '+total+' · '+assetRecords.length+' assets · 15 per table';
  $('asset-prev').disabled=assetPage===0;
  $('asset-next').disabled=assetPage>=total-1;
- $('asset-pager').classList.toggle('hidden',assetRecords.length<=40);
+ $('asset-pager').classList.toggle('hidden',assetRecords.length<=perPage);
 }
 $('asset-prev').onclick=()=>{assetPage--;renderAssetPage()};
 $('asset-next').onclick=()=>{assetPage++;renderAssetPage()};
@@ -186,7 +189,22 @@ $('cart').onclick=e=>{const b=e.target.closest('[data-remove]');if(b){cart.splic
 $('submit-request').onclick=async()=>{if(profile?.role!=='sales')return notify('Sales Team only',true);if(!selected||!cart.length)return notify('Select HD and add cooler quantity',true);if(!confirm('Submit request and reserve HD balance?'))return;try{const id=check(await db.rpc('submit_cooler_request',{p_hd:selected.hd_code,p_lines:cart}));notify('Request submitted: '+id);cart=[];await refreshHD();await Promise.all([renderMyRequests(),renderRequests(),renderNegative()]);}catch(e){notify(e.message,true)}};
 async function refreshHD(){if(!selected)return;const rows=check(await db.from('hd_balances').select('*').eq('hd_code',selected.hd_code));if(rows.length){selected=rows[0];await renderHD()}}
 async function renderMyRequests(){if(profile?.role!=='sales')return;const rs=check(await db.from('requests').select('id,hd_code,total_amount,status,requested_at').order('requested_at',{ascending:false}).limit(50));$('my-requests').innerHTML=table(['Request ID','HD','Amount','Status','Date'],rs.map(r=>[r.id.slice(0,8),r.hd_code,money(r.total_amount),r.status,new Date(r.requested_at).toLocaleString()]))}
-async function renderNegative(){if(!user)return;const from=negativePage*20;const q=await db.from('hd_balances').select('hd_code,hd_name,available_balance',{count:'exact'}).lt('original_balance',0).order('original_balance',{ascending:true}).range(from,from+19);const rs=check(q);$('negative-list').innerHTML=table(['HD Code','HD Name','Negative Balance'],rs.map(h=>[h.hd_code,h.hd_name,money(h.available_balance)]));const pages=Math.max(1,Math.ceil((q.count||0)/20));$('neg-page').textContent=`Page ${negativePage+1} of ${pages}`;$('neg-prev').disabled=negativePage===0;$('neg-next').disabled=negativePage>=pages-1}
+async function renderNegative(){
+ if(!user)return;
+ const perTable=15,perPage=perTable*2,from=negativePage*perPage;
+ const q=await db.from('hd_balances').select('hd_code,hd_name,available_balance',{count:'exact'})
+  .lt('original_balance',0).order('original_balance',{ascending:true}).range(from,from+perPage-1);
+ const rs=check(q),pages=Math.max(1,Math.ceil((q.count||0)/perPage));
+ negativePage=Math.min(negativePage,pages-1);
+ const halves=[rs.slice(0,perTable),rs.slice(perTable,perPage)];
+ $('negative-list').innerHTML=rs.length?halves.map((group,i)=>
+  `<div class="negative-half"><h3>Negative HD Balances · Table ${i+1}</h3>`+
+  table(['HD Code','HD Name','Negative Balance'],group.map(h=>[h.hd_code,h.hd_name,money(h.available_balance)]))+'</div>'
+ ).join(''):'No negative HD balances found.';
+ $('neg-page').textContent=`Page ${negativePage+1} of ${pages} · 15 per table`;
+ $('neg-prev').disabled=negativePage===0;
+ $('neg-next').disabled=negativePage>=pages-1;
+}
 $('neg-prev').onclick=async()=>{negativePage=Math.max(0,negativePage-1);await renderNegative()};$('neg-next').onclick=async()=>{negativePage++;await renderNegative()};
 async function renderRequests(){if(!user||profile.role!=='admin')return;const from=requestPage*20;const q=await db.from('requests').select('id,hd_code,cfa_code,total_amount,requested_at,status',{count:'exact'}).eq('status','pending').order('requested_at',{ascending:true}).range(from,from+19);const rs=check(q);const hdCodes=[...new Set(rs.map(r=>r.hd_code))];const hdRows=hdCodes.length?check(await db.from('hd_balances').select('hd_code,hd_name,asset_count,available_balance').in('hd_code',hdCodes)):[];const hmap=new Map(hdRows.map(h=>[h.hd_code,h]));$('approvals').innerHTML=`<table><thead><tr><th>HD Code</th><th>HD Name</th><th>No. of Assets</th><th>Available Balance</th><th>Amount</th><th>Actions</th></tr></thead><tbody>${rs.map(r=>{const h=hmap.get(r.hd_code)||{};return `<tr><td>${esc(r.hd_code)}</td><td>${esc(h.hd_name||'')}</td><td>${esc(h.asset_count||0)}</td><td>${esc(money(h.available_balance))}</td><td>${esc(money(r.total_amount))}</td><td><button data-approve="${esc(r.id)}">Approve</button> <button class="danger" data-reject="${esc(r.id)}">Reject</button></td></tr>`}).join('')}</tbody></table>`;const pages=Math.max(1,Math.ceil((q.count||0)/20));requestPage=Math.min(requestPage,pages-1);$('req-page').textContent=`Page ${requestPage+1} of ${pages}`;$('req-prev').disabled=requestPage===0;$('req-next').disabled=requestPage>=pages-1}
 $('req-prev').onclick=async()=>{requestPage=Math.max(0,requestPage-1);await renderRequests()};$('req-next').onclick=async()=>{requestPage++;await renderRequests()};
