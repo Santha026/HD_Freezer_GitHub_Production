@@ -22,20 +22,95 @@ function setTheme(dark){document.body.classList.toggle('dark',dark);$('theme').t
 $('theme').onclick=()=>setTheme(!document.body.classList.contains('dark'));
 setTheme(localStorage.getItem('hd-theme')==='dark');
 $('capacity').innerHTML=CAPS.map(c=>`<option>${esc(c)}</option>`).join('');
-function configure(){const c=window.HD_CONFIG;if(!c||!c.supabaseUrl?.startsWith('https://')||!c.supabaseAnonKey||c.supabaseUrl.includes('YOUR-')||c.supabaseAnonKey.includes('YOUR_')||!window.supabase){$('setup').classList.remove('hidden');$('auth').classList.add('hidden');return false}db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);return true}
-async function restore(){try{const {data:{session}}=await db.auth.getSession();if(session)await enter(session.user)}catch(e){notify(e.message,true)}}
-async function enter(u){user=u;profile=check(await db.from('profiles').select('full_name,role,active').eq('user_id',u.id).single());if(!profile.active)throw new Error('Account disabled. Contact administrator.');$('auth').classList.add('hidden');$('workspace').classList.remove('hidden');$('logout').classList.remove('hidden');$('identity').textContent=(profile.full_name||u.email)+' · '+(profile.role==='admin'?'Admin':'Sales Team');document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',profile.role!=='admin'));$('asset-tags').closest('.panel').classList.toggle('hidden',profile.role!=='admin');await Promise.all([renderNegative(),renderRequests(),renderHistory()]);}
-$('login').onsubmit=async e=>{e.preventDefault();try{const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});if(error)throw error;await enter(data.user)}catch(err){alert(err.message)}};
-$('logout').onclick=async()=>{await db.auth.signOut();location.reload()};
+function configure(){const c=window.HD_CONFIG;if(!c||!c.supabaseUrl?.startsWith('https://')||!c.supabaseAnonKey||c.supabaseUrl.includes('YOUR-')||c.supabaseAnonKey.includes('YOUR_')||!window.supabase){$('setup').classList.remove('hidden');$('auth').classList.remove('hidden');showLoginError('Connection not configured. Add your Supabase URL and publishable key in config.js, then reload.');return false}db=window.supabase.createClient(c.supabaseUrl,c.supabaseAnonKey);return true}
+function showLoginError(message){
+ const el=$('login-error');el.textContent=message;el.classList.remove('hidden');
+}
+function showLoginScreen(message=''){
+ user=null;profile=null;selected=null;cart=[];
+ $('auth').classList.remove('hidden');
+ $('workspace').classList.add('hidden');
+ $('logout').classList.add('hidden');
+ $('identity').textContent='';
+ if(message)showLoginError(message);
+}
+async function restore(){
+ try{
+  const result=await db.auth.getSession();
+  if(result.error)throw result.error;
+  if(result.data?.session?.user)await enter(result.data.session.user);
+ }catch(e){showLoginScreen('Unable to restore login: '+e.message)}
+}
+async function enter(u){
+ const result=await db.from('profiles').select('full_name,role,active').eq('user_id',u.id).single();
+ const p=check(result);
+ if(!p||!p.active)throw new Error('Account disabled or missing a profile. Contact your administrator.');
+ if(!['admin','sales'].includes(p.role))throw new Error('Invalid portal role. Contact your administrator.');
+ user=u;profile=p;
+ $('login-error').classList.add('hidden');
+ $('auth').classList.add('hidden');
+ $('workspace').classList.remove('hidden');
+ $('logout').classList.remove('hidden');
+ $('identity').textContent=(p.full_name||u.email)+' · '+(p.role==='admin'?'Admin':'Sales Team');
+ document.querySelectorAll('.admin-only').forEach(el=>el.classList.toggle('hidden',p.role!=='admin'));
+ document.querySelectorAll('.sales-only').forEach(el=>el.classList.toggle('hidden',p.role!=='sales'));
+ $('portal-role').textContent=p.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';
+ $('portal-user').textContent=p.full_name||u.email;
+ $('sidebar-role').textContent=p.role==='admin'?'ADMIN PORTAL':'SALES TEAM PORTAL';
+ $('sidebar-user').textContent=p.full_name||u.email;
+ $('upload-content').classList.add('hidden');
+ $('toggle-upload').textContent='View uploads';
+ renderRoleNav();
+ setSidebarOpen(window.innerWidth>1050);
+ try{await Promise.all([renderNegative(),renderRequests(),renderHistory()])}
+ catch(e){notify('Signed in, but data could not be loaded: '+e.message,true)}
+}
+
+function renderRoleNav(){
+ const admin=profile?.role==='admin';
+ const links=admin?[
+ ['HD Search & Balances','hd-search-section'],['HD Complete Details','hd-details-section'],['Capacity Summary','capacity-summary-section'],['Asset Tag Details','asset-details-section'],['Negative Balances','negative-section'],['Admin Approvals','approvals-section'],['Allocation History','allocation-history-section'],['Master Uploads','master-section']
+ ]:[['HD Search & Balances','hd-search-section'],['HD Complete Details','hd-details-section'],['Capacity Summary','capacity-summary-section'],['CFA Available Stock','sales-request-section'],['Cooler Requests','sales-request-section'],['My Requests','my-requests-section'],['Negative Balances','negative-section']];
+ $('role-nav').innerHTML=links.map(([label,id],i)=>`<a href="#${id}" data-section="${id}" class="sidebar-link"><span class="nav-symbol" aria-hidden="true">${['⌕','▦','▥','▤','◉','✓','◷','⇧'][i%8]}</span><span>${esc(label)}</span></a>`).join('');document.querySelectorAll('.sidebar-link').forEach(link=>link.addEventListener('click',()=>{document.querySelectorAll('.sidebar-link').forEach(x=>x.classList.remove('active'));link.classList.add('active');if(window.innerWidth<=1050)setSidebarOpen(false)}));
+}
+
+
+// Accessible sidebar: supports Microsoft Edge, Chrome and narrow screens.
+function setSidebarOpen(open){
+ const workspace=$('workspace');workspace.classList.toggle('sidebar-collapsed',!open);
+ $('sidebar-toggle').setAttribute('aria-expanded',String(open));
+ $('sidebar-overlay').classList.toggle('hidden',!open||window.innerWidth>1050);
+}
+$('sidebar-toggle').addEventListener('click',()=>setSidebarOpen($('workspace').classList.contains('sidebar-collapsed')));
+$('sidebar-close').addEventListener('click',()=>setSidebarOpen(false));
+$('sidebar-overlay').addEventListener('click',()=>setSidebarOpen(false));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('workspace').classList.contains('sidebar-collapsed'))setSidebarOpen(false)});
+window.addEventListener('resize',()=>{if(window.innerWidth>1050)$('sidebar-overlay').classList.add('hidden')});
+
+$('login').onsubmit=async e=>{
+ e.preventDefault();
+ if(!db)return showLoginError('Supabase is not configured. Please complete config.js.');
+ const submit=$('login').querySelector('[type=submit]');
+ submit.disabled=true;submit.textContent='Signing in…';
+ $('login-error').classList.add('hidden');
+ try{
+  const {data,error}=await db.auth.signInWithPassword({email:$('email').value.trim(),password:$('password').value});
+  if(error)throw error;
+  if(!data?.user)throw new Error('Login succeeded without a user session.');
+  await enter(data.user);
+ }catch(err){showLoginError(err.message||'Unable to sign in. Check your account and Supabase configuration.')}
+ finally{submit.disabled=false;submit.innerHTML='Sign in securely <span aria-hidden="true">→</span>'}
+};
+$('logout').onclick=async()=>{try{await db.auth.signOut();showLoginScreen()}catch(e){notify(e.message,true)}};
 async function loadHD(){const code=$('hd-code').value.trim();if(!code)return;try{const rows=check(await db.from('hd_balances').select('*').eq('hd_code',code).limit(1));if(!rows.length)throw new Error('HD Code not found');selected=rows[0];cart=[];assetRecords=[];assetPage=0;await renderHD();}catch(e){notify(e.message,true)}}
 $('find-hd').onclick=loadHD;$('hd-code').onkeydown=e=>{if(e.key==='Enter')loadHD()};
 async function renderHD(){if(!selected)return;const h=selected;
- const fields=[['HD Code',h.hd_code],['HD Name',h.hd_name],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)],['Freezer Deposit',money(Number(h.total_deposit)-Number(h.security_deposit))],['Asset Value',money(h.asset_value)],['Original HD Balance',money(h.original_balance)],['Pending / Approved Requests',money(h.requested_amount)],['Available HD Balance',money(h.available_balance)],['No. of Assets',h.asset_count],['Assigned CFA',h.cfa_code]];
+ const fields=[['HD Code',h.hd_code],['HD Name',h.hd_name],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)],['Freezer Deposit',money(h.original_balance)],['Asset Value',money(h.asset_value)],['Original HD Balance',money(h.original_balance)],['Pending / Approved Requests',money(h.requested_amount)],['Available HD Balance',money(h.available_balance)],['No. of Assets',h.asset_count],['Assigned CFA',h.cfa_code]];
  $('hd-summary').innerHTML=fields.map(([label,value])=>`<div class="metric ${label==='HD Name'?'name':''} ${label==='Available HD Balance'?'balance':''}"><span>${esc(label)}</span><strong>${esc(value)}</strong></div>`).join('');
  const detailGroups=[
  [['HD Code',h.hd_code],['HD Name',h.hd_name],['Location',h.location]],
  [['Assigned CFA',h.cfa_code],['Total Deposit',money(h.total_deposit)],['Security Deposit',money(h.security_deposit)]],
- [['Freezer Deposit',money(Number(h.total_deposit)-Number(h.security_deposit))],['Asset Value',money(h.asset_value)],['Available HD Balance',money(h.available_balance)]]
+ [['Freezer Deposit',money(h.original_balance)],['Asset Value',money(h.asset_value)],['Available HD Balance',money(h.available_balance)]]
  ];
  $('hd-details').innerHTML='<div class="detail-grid">'+detailGroups.map((g,i)=>'<div class="detail-block"><h3>HD Details '+(i+1)+'</h3>'+table(['Detail','Value'],g)+'</div>').join('')+'</div>';
  if(profile.role==='admin'){
@@ -44,7 +119,7 @@ async function renderHD(){if(!selected)return;const h=selected;
  $('capacity-summary').innerHTML=table(['Cooler Capacity','No. of Assets','Total Asset Value'],[...caps].map(([cap,v])=>[cap,v.qty,money(v.value)]));
  assetRecords=assets;assetPage=0;renderAssetPage();
  }else{$('capacity-summary').textContent='Detailed asset master is restricted to Admin.'}
- await renderStock();renderCart();await renderMyRequests();
+ if(profile.role==='sales'){await renderStock();renderCart();await renderMyRequests();}
 }
 function renderAssetPage(){
  const total=Math.max(1,Math.ceil(assetRecords.length/40));
@@ -67,13 +142,13 @@ $('asset-prev').onclick=()=>{assetPage--;renderAssetPage()};
 $('asset-next').onclick=()=>{assetPage++;renderAssetPage()};
 $('copyright-year').textContent=new Date().getFullYear();
 async function fetchAll(entity,columns,filter,value){let result=[];for(let i=0;i<100;i++){let q=db.from(entity).select(columns).range(i*1000,(i+1)*1000-1);if(filter)q=q.eq(filter,value);const data=check(await q);result.push(...data);if(data.length<1000)break}return result}
-async function renderStock(){if(!selected)return;const cfa=selected.cfa_code;$('cfa-heading').textContent='Available Stock · CFA '+cfa;const data=check(await db.rpc('cfa_stock_summary',{p_cfa:cfa}));const qty=new Map();for(const r of data)qty.set(norm(r.capacity),(qty.get(norm(r.capacity))||0)+Number(r.available_qty));const halves=[CAPS.slice(0,6),CAPS.slice(6)];$('cfa-stock').innerHTML=halves.map(arr=>`<div class="table-wrap">${table(['Capacity','Available QTY'],arr.map(c=>[c,qty.get(norm(c))||0]))}</div>`).join('')}
+async function renderStock(){if(!selected||profile?.role!=='sales')return;const cfa=selected.cfa_code;$('cfa-heading').textContent='Available Stock · CFA '+cfa;const data=check(await db.rpc('cfa_stock_summary',{p_cfa:cfa}));const qty=new Map();for(const r of data)qty.set(norm(r.capacity),(qty.get(norm(r.capacity))||0)+Number(r.available_qty));const halves=[CAPS.slice(0,6),CAPS.slice(6)];$('cfa-stock').innerHTML=halves.map(arr=>`<div class="table-wrap">${table(['Capacity','Available QTY'],arr.map(c=>[c,qty.get(norm(c))||0]))}</div>`).join('')}
 function renderCart(){if(!selected){$('cart').innerHTML='';return}const count=cart.reduce((a,l)=>a+l.quantity,0);$('cart').innerHTML=cart.map((l,i)=>`<div class="cartline"><span>${esc(l.capacity)} × ${l.quantity}</span><button class="danger" data-remove="${i}">Remove</button></div>`).join('');$('cart-balance').textContent=`${count} cooler(s) in cart. Exact request amount is calculated and validated securely when submitted. Current available balance: ${money(selected.available_balance)}.`;}
-$('add-line').onclick=()=>{if(!selected)return notify('Search an HD first',true);const capacity=$('capacity').value,quantity=Number($('quantity').value);if(!Number.isInteger(quantity)||quantity<1||quantity>500)return notify('Quantity must be 1–500',true);const found=cart.find(x=>x.capacity===capacity);if(found){found.quantity+=quantity;if(found.quantity>500)return notify('Maximum 500 per capacity',true)}else cart.push({capacity,quantity});renderCart()};
+$('add-line').onclick=()=>{if(profile?.role!=='sales')return notify('Sales Team only',true);if(!selected)return notify('Search an HD first',true);const capacity=$('capacity').value,quantity=Number($('quantity').value);if(!Number.isInteger(quantity)||quantity<1||quantity>500)return notify('Quantity must be 1–500',true);const found=cart.find(x=>x.capacity===capacity);if(found){found.quantity+=quantity;if(found.quantity>500)return notify('Maximum 500 per capacity',true)}else cart.push({capacity,quantity});renderCart()};
 $('cart').onclick=e=>{const b=e.target.closest('[data-remove]');if(b){cart.splice(Number(b.dataset.remove),1);renderCart()}};
-$('submit-request').onclick=async()=>{if(!selected||!cart.length)return notify('Select HD and add cooler quantity',true);if(!confirm('Submit request and reserve HD balance?'))return;try{const id=check(await db.rpc('submit_cooler_request',{p_hd:selected.hd_code,p_lines:cart}));notify('Request submitted: '+id);cart=[];await refreshHD();await Promise.all([renderMyRequests(),renderRequests(),renderNegative()]);}catch(e){notify(e.message,true)}};
+$('submit-request').onclick=async()=>{if(profile?.role!=='sales')return notify('Sales Team only',true);if(!selected||!cart.length)return notify('Select HD and add cooler quantity',true);if(!confirm('Submit request and reserve HD balance?'))return;try{const id=check(await db.rpc('submit_cooler_request',{p_hd:selected.hd_code,p_lines:cart}));notify('Request submitted: '+id);cart=[];await refreshHD();await Promise.all([renderMyRequests(),renderRequests(),renderNegative()]);}catch(e){notify(e.message,true)}};
 async function refreshHD(){if(!selected)return;const rows=check(await db.from('hd_balances').select('*').eq('hd_code',selected.hd_code));if(rows.length){selected=rows[0];await renderHD()}}
-async function renderMyRequests(){const rs=check(await db.from('requests').select('id,hd_code,total_amount,status,requested_at').order('requested_at',{ascending:false}).limit(50));$('my-requests').innerHTML=table(['Request ID','HD','Amount','Status','Date'],rs.map(r=>[r.id.slice(0,8),r.hd_code,money(r.total_amount),r.status,new Date(r.requested_at).toLocaleString()]))}
+async function renderMyRequests(){if(profile?.role!=='sales')return;const rs=check(await db.from('requests').select('id,hd_code,total_amount,status,requested_at').order('requested_at',{ascending:false}).limit(50));$('my-requests').innerHTML=table(['Request ID','HD','Amount','Status','Date'],rs.map(r=>[r.id.slice(0,8),r.hd_code,money(r.total_amount),r.status,new Date(r.requested_at).toLocaleString()]))}
 async function renderNegative(){if(!user)return;const from=negativePage*20;const q=await db.from('hd_balances').select('hd_code,hd_name,available_balance',{count:'exact'}).lt('original_balance',0).order('original_balance',{ascending:true}).range(from,from+19);const rs=check(q);$('negative-list').innerHTML=table(['HD Code','HD Name','Negative Balance'],rs.map(h=>[h.hd_code,h.hd_name,money(h.available_balance)]));const pages=Math.max(1,Math.ceil((q.count||0)/20));$('neg-page').textContent=`Page ${negativePage+1} of ${pages}`;$('neg-prev').disabled=negativePage===0;$('neg-next').disabled=negativePage>=pages-1}
 $('neg-prev').onclick=async()=>{negativePage=Math.max(0,negativePage-1);await renderNegative()};$('neg-next').onclick=async()=>{negativePage++;await renderNegative()};
 async function renderRequests(){if(!user||profile.role!=='admin')return;const from=requestPage*20;const q=await db.from('requests').select('id,hd_code,cfa_code,total_amount,requested_at,status',{count:'exact'}).eq('status','pending').order('requested_at',{ascending:true}).range(from,from+19);const rs=check(q);const hdCodes=[...new Set(rs.map(r=>r.hd_code))];const hdRows=hdCodes.length?check(await db.from('hd_balances').select('hd_code,hd_name,asset_count,available_balance').in('hd_code',hdCodes)):[];const hmap=new Map(hdRows.map(h=>[h.hd_code,h]));$('approvals').innerHTML=`<table><thead><tr><th>HD Code</th><th>HD Name</th><th>No. of Assets</th><th>Available Balance</th><th>Amount</th><th>Actions</th></tr></thead><tbody>${rs.map(r=>{const h=hmap.get(r.hd_code)||{};return `<tr><td>${esc(r.hd_code)}</td><td>${esc(h.hd_name||'')}</td><td>${esc(h.asset_count||0)}</td><td>${esc(money(h.available_balance))}</td><td>${esc(money(r.total_amount))}</td><td><button data-approve="${esc(r.id)}">Approve</button> <button class="danger" data-reject="${esc(r.id)}">Reject</button></td></tr>`}).join('')}</tbody></table>`;const pages=Math.max(1,Math.ceil((q.count||0)/20));requestPage=Math.min(requestPage,pages-1);$('req-page').textContent=`Page ${requestPage+1} of ${pages}`;$('req-prev').disabled=requestPage===0;$('req-next').disabled=requestPage>=pages-1}
