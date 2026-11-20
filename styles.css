@@ -168,3 +168,50 @@ body.dark #workspace table th{background:#10213a;color:#eaf4ff}
 #workspace .sidebar-link{font-size:13px}
 #workspace .sidebar-toggle:focus-visible,#workspace .sidebar-link:focus-visible{outline:3px solid #5BC0EB;outline-offset:2px}
 @media(max-width:1050px){#workspace .workspace-content{padding-top:58px}#workspace .sidebar-toggle{top:82px}}
+
+/* True single-view dashboard: one selected menu page; search includes HD details. */
+#workspace .portal-view-hidden{display:none!important}
+#workspace .layout,#workspace .layout>div,#workspace .layout>aside{display:contents}
+#workspace .workspace-content{min-width:0}
+#workspace .workspace-content>.role-banner{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+#current-page-name{font-size:16px;font-weight:700;flex:1;color:#fff}
+#workspace .panel{width:100%;max-width:100%;min-width:0}
+#workspace #hd-search-section,#workspace #hd-details-section{display:block}
+#workspace #hd-search-section.portal-view-hidden,#workspace #hd-details-section.portal-view-hidden{display:none!important}
+#workspace .sidebar-link.active{background:linear-gradient(95deg,#1C4ED8,#2878D8);border-color:#5BC0EB}
+#workspace .portal-sidebar{background:linear-gradient(165deg,#0B132B,#142b58)}
+#workspace .panel{animation:portalAppear .2s ease-out}
+@keyframes portalAppear{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){#workspace .panel{animation:none}}
+
+/* Navigation-only update: modelled on the user's HD Cooler Portal 10 Models.
+   All selectors are scoped to the sidebar so login, HD data and existing forms
+   retain their original styling and behavior. */
+#portal-sidebar{--menu-bg:#0e1c37;--menu-active:#2563eb;--menu-muted:#aebdd8;--menu-ink:#fff;
+ background:var(--menu-bg)!important;color:var(--menu-ink)!important;
+ transition:transform .25s ease,width .25s ease,background .2s ease}
+#portal-sidebar .sidebar-head{border-bottom:1px solid #8293aa35}
+#portal-sidebar .sidebar-head strong,#portal-sidebar .sidebar-head small,
+#portal-sidebar .sidebar-bottom,#portal-sidebar .sidebar-bottom small{color:var(--menu-ink)!important}
+#portal-sidebar .role-nav{display:flex;flex-direction:column;gap:2px;padding:12px 9px}
+#portal-sidebar .role-nav .sidebar-link{width:100%;display:flex;align-items:center;gap:11px;
+ border:0;background:transparent;color:var(--menu-muted);text-decoration:none;
+ border-radius:9px;padding:11px 13px;font-size:13px;font-weight:600;
+ transition:background .15s,color .15s,transform .15s;white-space:normal}
+#portal-sidebar .role-nav .sidebar-link:hover,#portal-sidebar .role-nav .sidebar-link:focus-visible{
+ background:color-mix(in srgb,var(--menu-active) 22%,transparent);color:var(--menu-ink);transform:translateX(2px)}
+#portal-sidebar .role-nav .sidebar-link.active{
+ background:var(--menu-active);color:#fff;box-shadow:inset 3px 0 #a8c9ff}
+#portal-sidebar[data-menu-model="10"] .role-nav .sidebar-link.active{color:#17213c}
+#portal-sidebar .nav-symbol{font-size:18px;min-width:24px;text-align:center}
+#portal-sidebar .sidebar-models{padding:10px 14px;border-top:1px solid #8293aa35}
+#portal-sidebar .sidebar-models label{display:block;color:var(--menu-muted);font-size:11px;font-weight:700;margin-bottom:6px}
+#portal-sidebar .sidebar-models select{width:100%;background:var(--menu-bg);color:var(--menu-ink);
+ border:1px solid #8193aa77;border-radius:8px;padding:8px;font-size:12px}
+#portal-sidebar[data-menu-model="2"]{border-right:1px solid #dce5f0}
+#portal-sidebar[data-menu-model="2"] .role-nav .sidebar-link.active{color:#fff}
+#portal-sidebar[data-menu-model="2"] .sidebar-head{border-color:#dce5f0}
+#portal-sidebar[data-menu-model="2"] .sidebar-models select{border-color:#dce5f0}
+@media(max-width:1050px){
+ #portal-sidebar .role-nav .sidebar-link{font-size:13px}
+}
