@@ -1,0 +1,40 @@
+/* Scoped sidebar styles only; existing login, data tables, KPIs and forms remain untouched. */
+#workspace .hap-app-shell{display:flex;min-height:calc(100vh - 130px);position:relative}
+#workspace .hap-sidebar{--hap-nav-bg:#0e1c37;--hap-nav-active:#2563eb;--hap-nav-muted:#aebdd8;--hap-nav-ink:#fff;width:255px;flex:none;background:var(--hap-nav-bg);color:var(--hap-nav-ink);display:flex;flex-direction:column;position:sticky;top:0;height:calc(100vh - 78px);transition:width .25s,background .2s;overflow-y:auto;z-index:15}
+#workspace .hap-brand{display:flex;align-items:center;gap:10px;padding:20px 16px;border-bottom:1px solid #8093b02c;font-weight:800;font-size:14px}
+#workspace .hap-brand b{font-size:18px;background:var(--hap-nav-active);padding:7px;border-radius:9px;color:#fff}
+#workspace .hap-menu{padding:12px 9px;flex:1}
+#workspace .hap-menu button{display:flex;align-items:center;gap:11px;width:100%;text-align:left;background:transparent;border:0;color:var(--hap-nav-muted);border-radius:9px;padding:11px 13px;font:600 13px/1.45 system-ui,Segoe UI,Arial,sans-serif;transition:background .15s,color .15s;cursor:pointer}
+#workspace .hap-menu button:hover{background:color-mix(in srgb,var(--hap-nav-active) 20%,transparent);color:var(--hap-nav-ink)}
+#workspace .hap-menu button.active{background:var(--hap-nav-active);color:#fff;box-shadow:inset 3px 0 #a8c9ff}
+#workspace .hap-sidebar[data-theme="10"] .hap-menu button.active{color:#17213c}
+#workspace .hap-icon{font-size:18px;min-width:22px;text-align:center}
+#workspace .hap-theme-box{padding:12px;border-top:1px solid #8093b02c}
+#workspace .hap-theme-box label{display:block;color:var(--hap-nav-muted);font-size:11px;margin-bottom:6px}
+#workspace .hap-theme-box select{width:100%;background:var(--hap-nav-bg);color:var(--hap-nav-ink);border:1px solid #8899ae8a;border-radius:8px;padding:8px;font-size:12px}
+#workspace .hap-sidefoot{padding:12px 16px;border-top:1px solid #8093b02c;font-size:11px;color:var(--hap-nav-muted)}
+#workspace .hap-main{min-width:0;flex:1;background:#f4f7fc}
+#workspace .hap-topbar{min-height:67px;background:white;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;gap:12px;padding:12px 20px;position:sticky;top:0;z-index:9}
+#workspace #hap-toggle{background:white;color:#1e293b;border:1px solid #e2e8f0;border-radius:9px;padding:8px 13px;cursor:pointer}
+#workspace #hap-view-title{flex:1;font-size:16px;color:#1e293b}
+#workspace #hap-role{background:#eaf1ff;color:#2052b5;border-radius:20px;padding:6px 11px;font-size:12px;font-weight:700}
+#workspace .hap-view{padding:22px;min-width:0}
+#workspace .hap-view>.panel{margin-bottom:16px}
+#workspace .hap-panel-hidden{display:none!important}
+#workspace .hap-empty-layout{display:none!important}
+#workspace .hap-overlay{display:none}
+#workspace.hap-collapsed .hap-sidebar{width:69px}
+#workspace.hap-collapsed .hap-brand span,#workspace.hap-collapsed .hap-menu-label,#workspace.hap-collapsed .hap-theme-box,#workspace.hap-collapsed .hap-sidefoot{display:none}
+#workspace.hap-collapsed .hap-brand{justify-content:center;padding:19px 6px}
+#workspace.hap-collapsed .hap-menu button{justify-content:center;padding:11px}
+@media(max-width:760px){
+ #workspace .hap-sidebar{position:fixed;top:0;bottom:0;left:0;height:100vh;width:270px!important;transform:translateX(-105%);transition:transform .25s;z-index:101}
+ #workspace.hap-mobile-open .hap-sidebar{transform:translateX(0)}
+ #workspace.hap-mobile-open .hap-overlay{display:block;position:fixed;inset:0;background:#0008;z-index:100;border:0;width:100%;height:100%}
+ #workspace .hap-main{width:100%}
+ #workspace .hap-topbar{padding:10px 12px}
+ #workspace #hap-view-title{font-size:13px}
+ #workspace #hap-role{font-size:10px;max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ #workspace .hap-view{padding:12px}
+ #workspace.hap-collapsed .hap-brand span,#workspace.hap-collapsed .hap-menu-label,#workspace.hap-collapsed .hap-theme-box,#workspace.hap-collapsed .hap-sidefoot{display:initial}
+}
